@@ -1,0 +1,13 @@
+# Catalogue. Phase 0: no auth.
+@base = http://localhost:8000
+@keyboard = 10000000-0000-4000-8000-000000000001
+@lamp = 10000000-0000-4000-8000-00000000000a
+
+### All products
+GET {{base}}/products
+
+### One product (the last-unit lamp)
+GET {{base}}/products/{{lamp}}
+
+### Unknown product -> 404
+GET {{base}}/products/30000000-0000-4000-8000-000000000000

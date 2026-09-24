@@ -4,9 +4,9 @@
 
 | # | Pattern | Category | Phase | Problem it solves here | Main trade-off | Where in code | Demo | Reference |
 |---|---|---|---|---|---|---|---|---|
-| 1 | Monolithic Architecture | Architecture | 0 | Baseline: simple deploys, ACID everywhere | Scaling and team coupling | | | https://microservices.io/patterns/monolithic.html |
-| 2 | Modular Monolith | Architecture | 0 | Enforced module boundaries before splitting | Needs discipline and tooling | | | No verified single source; see ADR-0001 |
-| 3 | Aggregate | Data / DDD | 0 | Consistency boundary for an order | Choosing boundaries is hard | | | https://microservices.io/patterns/data/aggregate.html |
+| 1 | Monolithic Architecture | Architecture | 0 | Baseline: simple deploys, ACID everywhere | Scaling and team coupling | `monolith/` | `make demo-0` steps 1–2 | https://microservices.io/patterns/monolithic.html |
+| 2 | Modular Monolith | Architecture | 0 | Enforced module boundaries before splitting | Needs discipline and tooling | `monolith/src/monolith/modules/*/service.py`, `monolith/tests/architecture.py` | `test_real_codebase_respects_module_boundaries` | No verified single source; see ADR-0001 |
+| 3 | Aggregate | Data / DDD | 0 | Consistency boundary for an order | Choosing boundaries is hard | `modules/order/domain/model.py` | `test_order_aggregate.py` | https://microservices.io/patterns/data/aggregate.html |
 | 4 | Decompose by Business Capability | Decomposition | 1 | Where to cut services | Capabilities can be vague | | | https://microservices.io/patterns/decomposition/decompose-by-business-capability.html |
 | 5 | Decompose by Subdomain | Decomposition | 1 | DDD-based cut | Needs domain insight | | | https://microservices.io/patterns/decomposition/decompose-by-subdomain.html |
 | 6 | Strangler Fig | Refactoring | 1–5 | Migrate without a big-bang rewrite | Temporary dual running | | | https://microservices.io/patterns/refactoring/strangler-application.html |

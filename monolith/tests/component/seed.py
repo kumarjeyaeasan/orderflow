@@ -1,0 +1,11 @@
+"""Seed IDs and values from migration 0002, for readable tests."""
+
+import uuid
+
+KEYBOARD = uuid.UUID("10000000-0000-4000-8000-000000000001")  # 8999, stock 50
+MOUSE = uuid.UUID("10000000-0000-4000-8000-000000000002")  # 2499, stock 100
+LAMP = uuid.UUID("10000000-0000-4000-8000-00000000000a")  # 2999, stock 1 (the last unit)
+
+ALICE = uuid.UUID("20000000-0000-4000-8000-000000000001")  # wallet 1_000_000
+DAN = uuid.UUID("20000000-0000-4000-8000-000000000004")  # wallet 3_000
+ZOE = uuid.UUID("20000000-0000-4000-8000-000000000005")  # wallet 0

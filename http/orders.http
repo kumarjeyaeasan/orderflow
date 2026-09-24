@@ -1,0 +1,50 @@
+# Orders. Phase 0: no auth, no Idempotency-Key (Phase 4).
+@base = http://localhost:8000
+@keyboard = 10000000-0000-4000-8000-000000000001
+@mouse = 10000000-0000-4000-8000-000000000002
+@lamp = 10000000-0000-4000-8000-00000000000a
+@alice = 20000000-0000-4000-8000-000000000001
+@zoe = 20000000-0000-4000-8000-000000000005
+
+### Place an order -> 201 SHIPPED
+# @name placed
+POST {{base}}/orders
+Content-Type: application/json
+
+{"customer_id": "{{alice}}", "lines": [
+  {"product_id": "{{keyboard}}", "quantity": 1},
+  {"product_id": "{{mouse}}", "quantity": 2}
+]}
+
+### Get the order just placed
+GET {{base}}/orders/{{placed.response.body.id}}
+
+### Cancel it -> 409 (SHIPPED is terminal; cancel with compensation arrives in Phase 5)
+POST {{base}}/orders/{{placed.response.body.id}}/cancel
+
+### Insufficient funds -> 201 REJECTED, stock unchanged
+POST {{base}}/orders
+Content-Type: application/json
+
+{"customer_id": "{{zoe}}", "lines": [{"product_id": "{{keyboard}}", "quantity": 1}]}
+
+### Insufficient stock -> 201 REJECTED
+POST {{base}}/orders
+Content-Type: application/json
+
+{"customer_id": "{{alice}}", "lines": [{"product_id": "{{lamp}}", "quantity": 5}]}
+
+### Invalid: quantity 0 -> 422
+POST {{base}}/orders
+Content-Type: application/json
+
+{"customer_id": "{{alice}}", "lines": [{"product_id": "{{keyboard}}", "quantity": 0}]}
+
+### Invalid: unknown customer -> 422
+POST {{base}}/orders
+Content-Type: application/json
+
+{"customer_id": "30000000-0000-4000-8000-000000000000", "lines": [{"product_id": "{{keyboard}}", "quantity": 1}]}
+
+### Unknown order -> 404
+GET {{base}}/orders/30000000-0000-4000-8000-000000000000

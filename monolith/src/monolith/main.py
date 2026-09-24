@@ -6,6 +6,9 @@ from fastapi import FastAPI
 from monolith import health
 from monolith.config import Settings, get_settings
 from monolith.db import make_engine, make_sessionmaker
+from monolith.modules.inventory.api.routes import router as inventory_router
+from monolith.modules.order.api.routes import router as order_router
+from monolith.modules.payment.api.routes import router as payment_router
 from orderflow_common.correlation import CorrelationIdMiddleware
 from orderflow_common.logging import configure_logging
 
@@ -30,4 +33,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="OrderFlow monolith", version="0.1.0", lifespan=lifespan)
     app.add_middleware(CorrelationIdMiddleware)
     app.include_router(health.router)
+    app.include_router(inventory_router)
+    app.include_router(order_router)
+    app.include_router(payment_router)
     return app

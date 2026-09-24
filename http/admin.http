@@ -1,0 +1,28 @@
+# Admin. Phase 0: no auth (the admin role check arrives in Phase 2).
+@base = http://localhost:8000
+@lamp = 10000000-0000-4000-8000-00000000000a
+@zoe = 20000000-0000-4000-8000-000000000005
+
+### Add 5 lamps
+POST {{base}}/admin/products/{{lamp}}/stock
+Content-Type: application/json
+
+{"delta": 5}
+
+### Remove more than exists -> 422, nothing changes
+POST {{base}}/admin/products/{{lamp}}/stock
+Content-Type: application/json
+
+{"delta": -1000}
+
+### Top up Zoe's wallet by 100.00
+POST {{base}}/admin/customers/{{zoe}}/wallet
+Content-Type: application/json
+
+{"amount_minor": 10000}
+
+### Top-up must be positive -> 422
+POST {{base}}/admin/customers/{{zoe}}/wallet
+Content-Type: application/json
+
+{"amount_minor": 0}

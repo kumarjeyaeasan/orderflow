@@ -3,41 +3,21 @@
 How to check Phase 0 is working, automatically and by hand. Each case has an ID, the command to run, and the
 expected result. Run every command from the repo root.
 
-**Status legend:** ✅ implemented and passing · ⏳ planned for a later Phase 0 step (not runnable yet)
+**Status:** Phase 0 is complete. Every case below is implemented and was run on 2026-09-24.
 
 ---
 
-## 1. What is left to finish Phase 0
+## 1. Phase 0 acceptance criteria and their evidence
 
-Phase 0 is done only when every acceptance criterion in `docs/ROADMAP.md` is met with evidence
-(see "Definition of Done: a phase" in `CLAUDE.md`).
+| Criterion (docs/ROADMAP.md) | Evidence |
+|---|---|
+| `make clean && make up && make demo-0` works on a fresh clone | M-20; ends with `Phase 0 demo passed.` |
+| The concurrency test proves exactly one winner | A-31 `test_atomic_reservation_has_exactly_one_winner` |
+| A payment failure leaves stock unchanged (single-transaction rollback) | A-22 `test_payment_failure_leaves_stock_unchanged`, demo step 2 |
+| The import-boundary test fails if one module imports another's internals | A-35…A-37, and M-21 (a forbidden import in real code fails the test) |
+| ADR-0001 records the modular monolith and its boundaries | `docs/adr/0001-modular-monolith.md` |
 
-| # | Work item | Roadmap task | Status |
-|---|---|---|---|
-| 1 | uv workspace, Makefile, ruff/mypy/pytest, `.env.example`, testcontainers fixture | T1 | ✅ Step 1 |
-| 2 | `monolith/` with six modules (`api/ domain/ infra/`), legacy customer fields, health endpoints | T2 | ✅ skeleton (Step 1) |
-| 3 | One Postgres DB, one schema per module | T3 | ✅ Step 1 |
-| 4 | Compose (postgres + monolith), Alembic, seed data | T6 | ✅ Step 1 |
-| 5 | Domain models + ORM per module; public `service.py` interface per module | T2, T4 | ⏳ Step 2 |
-| 6 | Import-boundary test (a module may import only another module's `service.py`) | T4 | ⏳ Step 2 |
-| 7 | API: `POST /orders`, `GET /orders/{id}`, `POST /orders/{id}/cancel`, `GET /products[/{id}]`, admin stock and wallet top-up | Brief §4 | ⏳ Step 2–3 |
-| 8 | Place Order in **one DB transaction** (reserve → charge → approve → ship → notify) | T5 | ⏳ Step 3 |
-| 9 | **Break it:** naive stock check (read → check in Python → write), with a test showing more than one winner | Break it | ⏳ Step 4 |
-| 10 | **Fix:** atomic conditional `UPDATE … WHERE qty >= :n` (or `SELECT … FOR UPDATE`), with a test showing exactly one winner | Break it | ⏳ Step 4 |
-| 11 | `.http` files for every endpoint | T6 | ⏳ (health only so far) |
-| 12 | `scripts/demo/phase-0.sh` + `make demo-0` | Demo | ⏳ Step 5 |
-| 13 | ADR-0001: modular monolith and module boundaries | Acceptance | ⏳ Step 5 |
-| 14 | Update `docs/PROGRESS.md`, suggest tag `phase-0-done` | DoD | ⏳ Step 5 |
-
-**Acceptance criteria (from ROADMAP), with the test that will prove each one:**
-
-| Criterion | Proved by | Status |
-|---|---|---|
-| `make clean && make up && make demo-0` works on a fresh clone | M-01 + M-20 | ⏳ (demo missing) |
-| The concurrency test proves exactly one winner | P-09 | ⏳ |
-| A payment failure leaves stock unchanged (single-transaction rollback) | P-05 | ⏳ |
-| The import-boundary test fails if one module imports another's internals | P-01, P-02 | ⏳ |
-| ADR-0001 exists | `ls docs/adr/0001-*` | ⏳ |
+What's left for you: commit, tag `phase-0-done`, and answer the self-check (the ADR lists the answers).
 
 ---
 
@@ -71,21 +51,21 @@ C="docker compose -f infra/compose/docker-compose.yml"
 | ID | Check | Command | Expected |
 |---|---|---|---|
 | G-01 | Lint, format, types | `make lint` | `All checks passed!`, `… files already formatted`, `Success: no issues found` |
-| G-02 | All automated tests | `make test` | `17 passed` (the count grows with later steps) |
+| G-02 | All automated tests | `make test` | `65 passed` |
 | G-03 | Stack starts healthy | `make up` | Both containers `Healthy`, then `{"status":"ok","checks":{"postgres":"up"}}` |
 
 Useful test selections:
 
 ```bash
-uv run pytest -m "not component"            # unit tests only: fast, no Docker (10 tests)
-uv run pytest -m component                  # component tests only: starts a Postgres container (7 tests)
+uv run pytest -m "not component"            # unit tests only: fast, no Docker (35 tests)
+uv run pytest -m component                  # component tests only: starts a Postgres container (30 tests)
 uv run pytest -v                            # every test, one per line
 uv run pytest <file>::<test_name>           # one test
 ```
 
 ---
 
-## 4. Automated test cases (implemented in Step 1) ✅
+## 4. Automated test cases
 
 ### 4.1 Correlation ID — `libs/common/tests/test_correlation.py`
 
@@ -126,7 +106,8 @@ uv run pytest monolith/tests/unit/test_health.py -v
 
 ### 4.4 Real Postgres (testcontainers) — `monolith/tests/component/`
 
-Each session starts a throwaway `postgres:16` container and runs `alembic upgrade head` against it.
+Each session starts one throwaway `postgres:16` container. Before **every** test the schema is downgraded to base
+and upgraded to head, so each test starts from the seed data and every migration's `downgrade()` is exercised.
 
 | ID | Test | What it proves | Type |
 |---|---|---|---|
@@ -144,7 +125,7 @@ uv run pytest monolith/tests/component -v
 
 ---
 
-## 5. Manual test cases (implemented in Step 1) ✅
+## 5. Manual test cases
 
 Start with the stack running: `make up`.
 
@@ -255,49 +236,100 @@ $C exec -T monolith sh -c 'ls /app/.venv/lib/python3.12/site-packages | grep -ci
 Open `http/health.http` in VS Code and click **Send Request** above each request.
 **Expected:** the same results as M-02, M-03 and M-08.
 
-### M-16 — Placeholder targets fail clearly
+### M-16 — e2e placeholder
 ```bash
-make demo-0 ; make e2e
+make e2e
 ```
-**Expected (until Step 5):** `scripts/demo/phase-0.sh does not exist yet` and
-`No e2e tests yet (tests/e2e/test_*.py)`, each with a non-zero exit.
+**Expected:** `No e2e tests yet (tests/e2e/test_*.py)` with a non-zero exit. Cross-service e2e tests start in
+Phase 1.
 
 ---
 
-## 6. Test cases still to build in Phase 0 ⏳
+## 6. Place Order, break-it and boundaries
 
-Written down now so the target is clear. IDs are stable; the test names may change when they're written.
+### 6.1 Automated
 
-### Automated
-
-| ID | Planned test | What it will prove | Type |
+| ID | Test (file) | What it proves | Type |
 |---|---|---|---|
-| P-01 | Import boundary: clean codebase | No module imports another module's `api/`, `domain/` or `infra/` | happy |
-| P-02 | Import boundary: violation detected | A deliberate cross-module internal import makes the checker fail | failure |
-| P-03 | Domain imports no framework code | `*/domain/` imports no fastapi, sqlalchemy or pydantic-settings | failure-guard |
-| P-04 | Place order, happy path | Order `SHIPPED`; stock ↓ by quantity; wallet ↓ by total; shipment + notification rows exist | happy |
-| P-05 | Insufficient funds (Zero Zoe) | Order `REJECTED`; **stock unchanged**; wallet unchanged (single-transaction rollback) | failure |
-| P-06 | Insufficient stock | Order `REJECTED`; no charge; stock unchanged | failure |
-| P-07 | Multi-line order, one line short | **No** line reserved (all or nothing) | failure |
-| P-08 | Naive reserve, 10 parallel orders for the last unit | **Break it:** more than one order succeeds (kept behind a toggle so it stays reproducible) | break-it |
-| P-09 | Atomic reserve, 10 parallel orders for the last unit | Exactly **1** `SHIPPED`, 9 `REJECTED`, stock = 0 | fix |
-| P-10 | Price snapshot | Changing a product price after ordering doesn't change the order total | happy |
-| P-11 | Validation errors | Unknown product or customer → 404/422; quantity ≤ 0 → 422 | failure |
-| P-12 | Order state machine | Allowed transitions pass; e.g. `SHIPPED → CANCELLED` raises | failure |
-| P-13 | Cancel in `PENDING`/`APPROVED` | `CANCELLED`, with stock and wallet restored | happy |
-| P-14 | Cancel in `SHIPPED`/`REJECTED` | 409; nothing changes | failure |
-| P-15 | Admin stock adjust and wallet top-up | Values change; a negative result → 422 | happy/failure |
-| P-16 | Money | Totals are integer minor units in `CURRENCY`; no floats | happy |
+| A-18 | `test_successful_order_is_shipped_and_every_module_did_its_part` (`component/test_place_order.py`) | 201 SHIPPED; stock and wallet down; 1 payment, 1 shipment; APPROVED + SHIPPED notifications | happy |
+| A-19 | `test_price_is_snapshotted_at_order_time` | A later price change doesn't alter the order | happy |
+| A-20 | `test_unknown_order_is_404` | GET of an unknown order → 404 | failure |
+| A-21 | `test_cancel_unknown_order_is_404` | Cancel of an unknown order → 404 | failure |
+| A-22 | `test_payment_failure_leaves_stock_unchanged` | Zoe: REJECTED "insufficient funds"; **stock unchanged**; no payment or shipment | failure |
+| A-23 | `test_partial_funds_charge_nothing` | Dan (3000) can't buy 8999; wallet untouched | failure |
+| A-24 | `test_insufficient_stock_is_rejected_without_charging` | 2 lamps from stock 1 → REJECTED; no charge | failure |
+| A-25 | `test_reservation_is_all_or_nothing` | Keyboard taken, then lamp fails → keyboard put back | failure |
+| A-26 | `test_unknown_customer_is_refused_and_nothing_is_stored` | 422; no order row | failure |
+| A-27 | `test_unknown_product_is_refused` | 422; nothing stored or reserved | failure |
+| A-28 | `test_malformed_orders_are_refused` | No lines, qty 0 or −1, duplicate line, bad UUID → 422 | failure |
+| A-29 | `test_cancel_of_terminal_order_is_409_and_changes_nothing` | SHIPPED and REJECTED can't be cancelled | failure |
+| A-30 | `test_naive_reservation_oversells_the_last_unit` (`component/test_concurrency.py`) | **Break it:** naive mode ships more than 1 lamp from stock 1 | break-it |
+| A-31 | `test_atomic_reservation_has_exactly_one_winner` | **Fix:** 1 SHIPPED, 9 REJECTED, stock 0, 1 payment, charged once | fix |
+| A-32 | `component/test_catalogue_and_admin.py` (9 tests) | List/get products; stock ±; below zero → 422; top-up; amount ≤ 0 → 422; unknown → 404 | happy/failure |
+| A-33 | `unit/test_order_aggregate.py` (15 tests) | Total in integer minor units; invalid orders refused; every legal and illegal transition | happy/failure |
+| A-34 | `test_real_codebase_respects_module_boundaries` (`unit/test_architecture.py`) | The real modules only import each other's `service.py` | happy |
+| A-35 | `test_reaching_into_another_modules_internals_fails` (5 cases) | Absolute, dotted, `from x import infra` and relative forms are all caught | failure |
+| A-36 | `test_framework_import_in_domain_fails` (2 cases) | `sqlalchemy` / `fastapi` in `domain/` is caught | failure |
+| A-37 | `test_allowed_imports_pass`, `test_violation_message_points_at_file_and_line` | No false positives; the message names file and line | happy |
 
-### Manual (once the endpoints exist)
+```bash
+uv run pytest monolith/tests/component/test_place_order.py -v
+uv run pytest monolith/tests/component/test_concurrency.py -v -s     # -s prints the outcome counts
+uv run pytest monolith/tests/unit/test_architecture.py -v
+```
 
-| ID | Planned check | Command (indicative) |
-|---|---|---|
-| M-17 | Place an order as Alice | `curl -s -XPOST localhost:8000/orders -H 'content-type: application/json' -d '{"customer_id":"20000000-0000-4000-8000-000000000001","lines":[{"product_id":"10000000-0000-4000-8000-000000000001","quantity":1}]}'` → `SHIPPED` |
-| M-18 | Order as Zero Zoe | Same request with Zoe's ID → `REJECTED`, stock unchanged |
-| M-19 | 10 parallel orders for the last unit | `seq 10 \| xargs -P10 -I{} curl -s -XPOST localhost:8000/orders …` → one success, stock 0 |
-| M-20 | Full demo from a clean state | `make clean && make up && make demo-0` |
-| M-21 | Every endpoint via REST Client | `http/*.http` |
+### 6.2 Manual
+
+Seed IDs are in section 2. Start with `make up`.
+
+#### M-17 — Place an order
+```bash
+curl -s -XPOST localhost:8000/orders -H 'content-type: application/json' \
+  -d '{"customer_id":"20000000-0000-4000-8000-000000000001","lines":[{"product_id":"10000000-0000-4000-8000-000000000001","quantity":1}]}'
+```
+**Expected:** HTTP 201 with `"status":"SHIPPED"` and `"total_minor":8999`.
+
+#### M-18 — Insufficient funds leaves stock unchanged
+```bash
+curl -s localhost:8000/products/10000000-0000-4000-8000-000000000001    # note stock_qty
+curl -s -XPOST localhost:8000/orders -H 'content-type: application/json' \
+  -d '{"customer_id":"20000000-0000-4000-8000-000000000005","lines":[{"product_id":"10000000-0000-4000-8000-000000000001","quantity":1}]}'
+curl -s localhost:8000/products/10000000-0000-4000-8000-000000000001    # same stock_qty
+```
+**Expected:** `"status":"REJECTED"`, `"rejection_reason":"insufficient funds"`; stock is the same before and after.
+
+#### M-19 — The break-it race by hand
+```bash
+ATOMIC_STOCK_RESERVATION=false docker compose -f infra/compose/docker-compose.yml up -d --wait monolith
+curl -s -XPOST localhost:8000/admin/products/10000000-0000-4000-8000-00000000000a/stock \
+  -H 'content-type: application/json' -d '{"delta": 1}'                 # stock back to 1 (adjust delta if needed)
+seq 10 | xargs -P10 -I{} curl -s -w '\n' -XPOST localhost:8000/orders -H 'content-type: application/json' \
+  -d '{"customer_id":"20000000-0000-4000-8000-000000000001","lines":[{"product_id":"10000000-0000-4000-8000-00000000000a","quantity":1}]}' \
+  | grep -o '"status":"[A-Z]*"' | sort | uniq -c
+```
+**Expected:** more than one `SHIPPED`. Repeat with `ATOMIC_STOCK_RESERVATION=true` (and stock reset to 1):
+exactly `1 "status":"SHIPPED"` and `9 "status":"REJECTED"`. Finish with `ATOMIC_STOCK_RESERVATION=true`.
+
+#### M-20 — The full demo from a clean state
+```bash
+make clean && make up && make demo-0
+```
+**Expected:** four green ✔ lines and `Phase 0 demo passed.` It is safe to re-run; it resets the lamp's stock itself.
+
+#### M-21 — The boundary test catches a real violation
+Add this line under `import structlog` in `monolith/src/monolith/modules/order/service.py`:
+```python
+from monolith.modules.inventory.infra.models import ProductRow  # noqa: F401
+```
+```bash
+uv run pytest monolith/tests/unit/test_architecture.py::test_real_codebase_respects_module_boundaries -q
+```
+**Expected:** `1 failed`, with `service.py:12: cross-module internals: imports monolith.modules.inventory.infra.models.ProductRow`.
+Remove the line afterwards.
+
+#### M-22 — Every endpoint via REST Client
+Open `http/products.http`, `http/orders.http` and `http/admin.http` and click **Send Request** on each.
+**Expected:** the status codes written in each request's comment.
 
 ---
 

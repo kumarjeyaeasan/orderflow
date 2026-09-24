@@ -27,6 +27,8 @@ services:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-orderflow}:${POSTGRES_PASSWORD:-orderflow}@postgres:5432/${POSTGRES_DB:-orderflow}
       CURRENCY: ${CURRENCY:-USD}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Phase 0 break-it toggle: false = naive stock reservation that oversells.
+      ATOMIC_STOCK_RESERVATION: ${ATOMIC_STOCK_RESERVATION:-true}
     ports:
       - "${MONOLITH_HOST_PORT:-8000}:8000"
     depends_on:

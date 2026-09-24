@@ -1,15 +1,15 @@
 """The schema and seed data that later steps (and the demo) rely on."""
 
-import uuid
-
 import pytest
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from .seed import LAMP, ZOE
+
 MODULE_SCHEMAS = {"customer", "orders", "inventory", "payment", "shipping", "notification"}
-LAST_UNIT_PRODUCT = uuid.UUID("10000000-0000-4000-8000-00000000000a")
-ZERO_BALANCE_CUSTOMER = uuid.UUID("20000000-0000-4000-8000-000000000005")
+LAST_UNIT_PRODUCT = LAMP
+ZERO_BALANCE_CUSTOMER = ZOE
 
 
 async def test_one_schema_per_module(engine: AsyncEngine) -> None:
