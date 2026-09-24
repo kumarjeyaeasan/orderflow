@@ -13,21 +13,14 @@ Docker Compose 5.5, FastAPI 0.141, Starlette 1.7, uvicorn 0.53, SQLAlchemy 2.0, 
 
 ```mermaid
 flowchart LR
-  subgraph Host["Your machine (WSL)"]
-    make["make up"] --> compose["docker compose"]
-    curl["curl / REST Client"]
-  end
-  subgraph Docker["Docker network 'orderflow_default'"]
-    pg[("postgres:16<br/>volume pgdata")]
-    subgraph mono["monolith container"]
-      alembic["alembic upgrade head"] --> uvicorn["uvicorn (PID 1)"] --> app["FastAPI app<br/>create_app()"]
-    end
-  end
-  compose --> pg
-  compose --> mono
-  curl -- "localhost:8000" --> uvicorn
-  app -- "postgres:5432" --> pg
-  alembic -- "postgres:5432" --> pg
+    make[make up] --> compose[docker compose]
+    compose --> pg[(postgres 16)]
+    compose --> alembic[alembic upgrade head]
+    alembic --> uvicorn[uvicorn PID 1]
+    uvicorn --> app[FastAPI app from create_app]
+    curl[curl or REST Client] -->|localhost 8000| uvicorn
+    alembic -->|postgres 5432| pg
+    app -->|postgres 5432| pg
 ```
 (Text version: `make up` → docker compose → starts postgres, then the monolith container. That container
 first runs alembic migrations against postgres, then starts uvicorn, which serves the FastAPI app. Your curl
@@ -330,7 +323,7 @@ sequenceDiagram
   S->>DB: INSERT order (PENDING) + lines
   S->>DB: SAVEPOINT
   S->>X: inventory.reserve → UPDATE stock … WHERE stock_qty >= n
-  S->>X: payment.charge → UPDATE wallet … WHERE balance >= total; INSERT payment
+  S->>X: payment.charge → UPDATE wallet … WHERE balance >= total, then INSERT payment
   S->>DB: RELEASE SAVEPOINT
   S->>X: notification (APPROVED), shipping.create_shipment, notification (SHIPPED)
   S->>DB: UPDATE order status = SHIPPED
