@@ -1,0 +1,44 @@
+# Phase 0: postgres + monolith. Run through the Makefile (`make up`), which sets the project
+# name and passes .env if present. Every value has a safe local default.
+name: orderflow
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-orderflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orderflow}
+      POSTGRES_DB: ${POSTGRES_DB:-orderflow}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  monolith:
+    build:
+      context: ../..
+      dockerfile: monolith/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-orderflow}:${POSTGRES_PASSWORD:-orderflow}@postgres:5432/${POSTGRES_DB:-orderflow}
+      CURRENCY: ${CURRENCY:-USD}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${MONOLITH_HOST_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # No curl in the slim image; use the venv's Python.
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2).status == 200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+volumes:
+  pgdata:
