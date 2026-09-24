@@ -42,13 +42,16 @@ set_stock() {  # $1 = product, $2 = wanted quantity
 }
 
 race() {  # prints "shipped rejected"
-  local body; body=$(order_json "$ALICE" "$LAMP" 1)
-  seq "$N" | xargs -P "$N" -I{} curl -sS -w '\n' -X POST "$BASE/orders" \
-      -H 'content-type: application/json' -d "$body" |
-    python3 -c '
-import json, sys
-statuses = [json.loads(line)["status"] for line in sys.stdin if line.strip()]
-print(statuses.count("SHIPPED"), statuses.count("REJECTED"))'
+  local body dir; body=$(order_json "$ALICE" "$LAMP" 1); dir=$(mktemp -d)
+  # One file per request: parallel curls writing to one shared pipe can interleave their output.
+  seq "$N" | xargs -P "$N" -I{} curl -sS -o "$dir/{}.json" -X POST "$BASE/orders" \
+      -H 'content-type: application/json' -d "$body"
+  python3 - "$dir" <<'PY'
+import json, pathlib, sys
+statuses = [json.loads(p.read_text()).get("status") for p in pathlib.Path(sys.argv[1]).glob("*.json")]
+print(statuses.count("SHIPPED"), statuses.count("REJECTED"))
+PY
+  rm -rf "$dir"
 }
 
 bold "0. Stack is ready"
