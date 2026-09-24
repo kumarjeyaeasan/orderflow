@@ -1,5 +1,7 @@
 # Phase 0 — Test plan (modular monolith)
 
+For the short copy-paste version, see [phase-0-how-to-test.md](phase-0-how-to-test.md).
+
 How to check Phase 0 is working, automatically and by hand. Each case has an ID, the command to run, and the
 expected result. Run every command from the repo root.
 
