@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "anthropic.claude-code",
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.debugpy",
+    "charliermarsh.ruff",
+    "tamasfe.even-better-toml",
+    "redhat.vscode-yaml",
+    "humao.rest-client",
+    "ms-azuretools.vscode-containers",
+    "zxh404.vscode-proto3",
+    "bierner.markdown-mermaid",
+    "ms-kubernetes-tools.vscode-kubernetes-tools"
+  ]
+}
