@@ -1,6 +1,6 @@
 # Phase 1 — Decomposition
 
-- **Status:** 🟨 in progress (step 1)
+- **Status:** 🟨 in progress (step 1 ✅, step 2 next)
 - **Mode:** COACH (the learner writes the code; Claude guides and reviews; see `CLAUDE.md` → Modes)
 - **Roadmap:** `docs/ROADMAP.md` → Phase 1
 - **Patterns:** Decompose by Business Capability, Decompose by Subdomain, Strangler Fig, Anti-Corruption Layer
@@ -50,8 +50,11 @@ same Postgres container.)
 
 | # | Step | Main files | Tests (including failure paths) | Status |
 |---|---|---|---|---|
-| 1 | **Context map + ADR-0002 draft** (no code) | `docs/context-map.md`, `docs/adr/0002-decomposition.md` | none | 🟨 |
-| 2 | **Gateway**: FastAPI + httpx reverse proxy on :8000; the monolith moves to :8010. Forwards public routes only (`/products`, `/orders`, `/admin`), so internal routes stay hidden. Passes `X-Correlation-ID` through | `gateway/`, Compose, workspace | Unit: routing table; unknown or `/internal` paths → 404. **E2E (first time):** Phase 0 flows through `localhost:8000`; monolith down → 502 at the gateway | ⬜ |
+| 1 | **Context map + ADR-0002 draft** (no code) | `docs/context-map.md`, `docs/adr/0002-decomposition.md` | none | ✅ |
+| 2 | **Gateway** (split into 2a–2c, about an hour each): the single front door on :8000; the monolith moves to :8010 | see 2a–2c | see 2a–2c | ⬜ |
+| 2a | ↳ **Gateway app + unit tests**: a small FastAPI app that forwards public routes (`/products`, `/orders`, `/admin`) to the monolith with httpx, passes `X-Correlation-ID` through, and hides everything else | `gateway/` (new workspace member), root `pyproject.toml` | Unit: forwarded paths reach the monolith (faked with httpx's `MockTransport`); `/internal/...` and unknown paths → 404; monolith unreachable → 502 | ⬜ |
+| 2b | ↳ **Docker + Compose**: a Dockerfile for the gateway; the gateway takes host port 8000, the monolith moves to 8010 | `gateway/Dockerfile`, `infra/compose/docker-compose.yml`, `Makefile`, `.env.example` | `make up`: both healthy; `curl localhost:8000/products` goes through the gateway | ⬜ |
+| 2c | ↳ **First end-to-end tests**: the Phase 0 flows run against the real stack through the gateway | `tests/e2e/` | E2E (`make e2e`): order SHIPPED, insufficient funds REJECTED, unknown order 404; the `.http` files still work unchanged | ⬜ |
 | 3 | **Notification service**: own database and DB user (same Postgres container), own migrations, health endpoints, `POST /notifications`. Adds the legacy `GET /internal/customers/{id}` to the monolith (from the parking lot) | `services/notification/`, `infra/compose/init-db.sql`, monolith customer API | Component: a notification is stored; malformed request → 422; legacy endpoint: unknown customer → 404 | ⬜ |
 | 4 | **ACL**: the single adapter in the notification service that maps `{cust_id, cust_nm, cust_eml}` to a clean `Recipient(name, email)` | `services/notification/src/notification/infra/customer_acl.py` | Unit: mapping; missing or unknown customer. **Guard test:** fails if legacy names appear outside `monolith/` and that one file | ⬜ |
 | 5 | **Strangler switch** `NOTIFICATION_ROUTE=monolith\|service` inside the monolith's notification module. The order module doesn't change | `monolith/src/monolith/modules/notification/service.py`, new HTTP client in its `infra/` | Component: both routes give the same order response; the `service` route makes the HTTP call (tested with httpx's built-in `MockTransport`, no new library) | ⬜ |
@@ -207,3 +210,4 @@ No code, so no tests. Check that both files render in the Markdown preview (`Ctr
 | Date | Event |
 |---|---|
 | 2026-09-29 | Plan written; working mode changed to COACH |
+| 2026-09-29 | Step 1 ✅: context map (written by Claude on request) and ADR-0002 (Context, Options, Decision; written by Claude on request). Learner's summary: "minimal impact, especially no financial loss". Also recorded: no real email in any phase; Phase 10 (reporting + loyalty) planned |
