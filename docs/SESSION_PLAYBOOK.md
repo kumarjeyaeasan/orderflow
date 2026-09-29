@@ -17,7 +17,33 @@ the problem it solves here, the failure we will see without it, 2 alternative de
 Then propose the implementation plan for this phase. Don't write code yet.
 ```
 
-**Build a step (default)**
+**Start a phase (COACH, default)**
+```
+Start Phase N. Create docs/phases/phase-N.md with the problem, steps (files + tests), decisions and
+acceptance criteria. Don't write code. Wait for my approval.
+```
+
+**Start the next step (COACH)**
+```
+Next step. Write the step card into docs/phases/phase-N.md and walk me through it.
+Don't edit source files; I'll write the code.
+```
+
+**Ask for help while coding (COACH help ladder)**
+```
+hint        → a nudge in the right direction
+more        → pseudocode for the part I'm stuck on
+show code   → a snippet in chat that I type in myself
+you write it → Claude edits that one file; the rest of the step stays mine
+```
+
+**Finish a step (COACH)**
+```
+done. Run make test, make lint (and make up if services changed), review my changes for step N
+(correctness and failure paths first), and either mark it ✅ in the phase file or list fixes with file:line.
+```
+
+**Build a step yourself (BUILD, per task)**
 ```
 MODE: BUILD. Implement the approved step. Run make test and make lint and show me the output.
 Then walk me through the key lines and the failure paths they handle.

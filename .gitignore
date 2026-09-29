@@ -8,3 +8,4 @@ __pycache__/
 CLAUDE.local.md
 *.log
 .DS_Store
+CLAUDE.md
