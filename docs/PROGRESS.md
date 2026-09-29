@@ -20,6 +20,7 @@
 | 7 Observability | ⬜ | ⬜ | | |
 | 8 Deployment and mesh | ⬜ | ⬜ | | |
 | 9 Testing and hardening | ⬜ | ⬜ | | |
+| 10 New services: Reporting + Loyalty (planned) | ⬜ | ⬜ | | |
 
 Legend: ⬜ not started · 🟨 in progress · ✅ done
 
@@ -31,3 +32,4 @@ Legend: ⬜ not started · 🟨 in progress · ✅ done
 - Phase 1: the monolith needs a legacy `GET /customers/{id}` (`cust_nm`, `cust_eml`) for the notification ACL to call.
 - Phase 5: cancel of PENDING/APPROVED with compensation (refund + release); `cancel_order` raises NotImplementedError until then.
 - Phase 7: uvicorn's own access/startup logs are plain text; route them through structlog as JSON.
+- Phase 10 (after Phase 9): add a Reporting/Stats service (cross-module query) and a Loyalty service (shared-table problem) the way a mature team would. See `docs/ROADMAP.md` → Phase 10. Not designed yet.

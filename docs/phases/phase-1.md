@@ -111,7 +111,7 @@ it, and which has the **fewest**? Then check with the command in A3.
 #### Files you create
 | File | How to start it |
 |---|---|
-| `docs/context-map.md` | a new empty file, using the skeleton below |
+| `docs/context-map.md` | already created with the skeleton below (headings and empty tables); fill it in |
 | `docs/adr/0002-decomposition.md` | `cp docs/adr/0000-template.md docs/adr/0002-decomposition.md` |
 
 #### Vocabulary (short)

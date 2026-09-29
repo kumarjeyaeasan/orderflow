@@ -363,6 +363,38 @@ the chaos script and prints the reconciliation report.
 
 ---
 
+## Phase 10 — Adding new services to a mature architecture (planned; build after Phase 9)
+**Status:** agreed 2026-09-29 as future work. Nothing here is designed or decided yet. Plan it at the start of
+the phase (in `docs/phases/phase-10.md`), as for every other phase.
+
+**Goal:** add two new services the way a mature microservices team would. The system is already running with
+separate services, databases, messaging and monitoring, and the new services must not break any of it.
+**Patterns (expected):** Bounded Context design for a new service, Database per Service, event-carried data,
+CQRS read models, data backfill, feature flags, consumer-driven contracts.
+
+**The two services and the problem each one brings:**
+
+| Service | Kind of cross-module dependency it creates | Why it's hard |
+|---|---|---|
+| **Reporting / Stats** | **B: a query across modules.** It needs data owned by order, payment, shipping and customer at once (e.g. "revenue per day", "orders per customer with shipment status") | By then every service has its own database, so a single SQL `JOIN` across them is impossible |
+| **Loyalty program** | **C: a shared table.** Points are earned per order, so the obvious (wrong) design is to add a `points` column to the order's table and let two services write it | Two writers on one table means neither service can change, deploy or move its data on its own |
+
+**Questions to answer when the phase starts** (not decided now):
+1. **Where does each service get its data?** Options include calling the owners' APIs, keeping its own copy
+   updated from events (Phase 4), or a read model built from events (Phase 6).
+2. **How is it introduced safely?** Options include contract-first API and event schemas, a backfill of
+   historical data, running it in "shadow" mode, and turning it on with a feature flag.
+3. **Who owns what data?** For loyalty: which service owns "points", and how does it learn that an order was
+   paid, cancelled or refunded?
+4. **How do we prove it didn't break anything?** Options include contract tests, end-to-end tests and the
+   chaos checks from Phase 9.
+5. **Break it first:** build the naive version (a cross-database `JOIN` for reporting, a shared `points` column
+   for loyalty), watch it fail, then fix it the professional way.
+
+**Acceptance criteria:** written when the phase is planned.
+
+---
+
 ## After Phase 9 (optional)
 - Deploy to a managed Kubernetes service in the cloud.
 - Add a GraphQL aggregation layer.
