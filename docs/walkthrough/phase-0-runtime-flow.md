@@ -274,7 +274,7 @@ INFO:     Uvicorn running on http://0.0.0.0:8000
 
 `docker-compose.yml:37-43`: every 5 s, Docker runs *inside the container*:
 ```python
-urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=2)   # healthy if 200
+urllib.request.urlopen("http://127.0.0.1:8000/health/ready", timeout=2)  # healthy if 200
 ```
 `/health/ready` (`health.py:25-39`) runs `SELECT 1` with a 2-second limit. The first success marks the
 container **healthy**, and `docker compose up --wait` returns. Make then runs `Makefile:16`:

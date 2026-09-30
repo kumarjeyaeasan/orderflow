@@ -34,7 +34,7 @@ e2e: ## End-to-end tests against the running stack
 lint: ## ruff check + ruff format --check + mypy
 	uv run ruff check .
 	uv run ruff format --check .
-	uv run mypy libs/common/src monolith/src
+	uv run mypy libs/common/src monolith/src gateway/src
 
 fmt: ## Format and autofix
 	uv run ruff format .

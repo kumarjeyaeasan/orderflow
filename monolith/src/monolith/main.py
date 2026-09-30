@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -18,7 +18,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging(settings.service_name, settings.log_level)
 
     @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # Creating the engine does not connect, so the app starts (and /health/live answers)
         # even if Postgres is down; /health/ready reports it.
         engine = make_engine(settings.database_url)

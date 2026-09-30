@@ -28,6 +28,9 @@ Legend: ⬜ not started · 🟨 in progress · ✅ done
 | Test | Created in | Fixed in |
 |---|---|---|
 
+## Revisit at every phase (check when closing each phase)
+- `gateway/src/gateway/routing.py`: the sample route table and sample results in the `resolve_upstream` docstring (Args → `routes`, Returns). Update it whenever a prefix moves to a new service (e.g. `/products` → inventory in Phase 2).
+
 ## Parking lot (ideas for later phases)
 - Phase 1: the monolith needs a legacy `GET /customers/{id}` (`cust_nm`, `cust_eml`) for the notification ACL to call.
 - Phase 5: cancel of PENDING/APPROVED with compensation (refund + release); `cancel_order` raises NotImplementedError until then.
